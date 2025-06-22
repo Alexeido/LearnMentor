@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>📚 Gestor de Temarios Avanzado</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* ... (Estilos CSS anteriores sin cambios significativos, excepto los nuevos para notificaciones y test) ... */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+        
+        .config-details {
+            background: #f0f3ff;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #d1d9ff;
+        }
+
+        .config-details summary {
+            padding: 20px 25px;
+            font-weight: 600;
+            font-size: 1.4rem;
+            color: #4a5568; 
+            cursor: pointer;
+            outline: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .config-details summary::after {
+            content: '▼'; 
+            font-size: 1rem;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .config-details[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .config-content {
+            padding: 0 25px 25px 25px;
+        }
+        
+        .config-section { 
+            background: #f8f9ff;
+            border-radius: 10px; 
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e1e8ff;
+        }
+
+
+        .config-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem; 
+            border-bottom: 1px solid #e1e8ff;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="number"], /* Added for number input */
+        .form-group select,
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group input[type="number"]:focus,
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+
+        .file-upload-section {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid #e1e8ff;
+        }
+        .file-upload-section h3 {
+             color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .files-list {
+            background: white;
+            border-radius: 15px;
+            border: 2px solid #e1e8ff;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .file-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-item:hover {
+            background: #f8f9ff;
+        }
+
+        .file-item.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+        .btn-secondary:hover { background: #e9ecef; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .btn-info:hover { background-color: #138496; }
+        .btn-success { background-color: #28a745; color: white; } /* New button color */
+        .btn-success:hover { background-color: #218838; }
+        .btn-exam { background: linear-gradient(135deg, #fd7e14, #ffc107); color: white; } /* Exam button color */
+        .btn-exam:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(253, 126, 20, 0.3); }
+
+
+        .questions-container {
+            background: white;
+            border-radius: 15px;
+            border: 2px solid #e1e8ff;
+            margin-top: 30px;
+            padding: 25px;
+        }
+
+        .question-item {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e1e8ff;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .answer-input, .fill-blank-input { /* Para preguntas de desarrollo y rellenar */
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        .answer-input:focus, .fill-blank-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .fill-blank-input { /* Specific for fill in the blank */
+            min-height: auto; /* Override */
+            display: inline-block;
+            width: auto;
+            margin: 0 5px;
+            padding: 5px 8px;
+            min-width: 100px; /* Ensure it's not too small */
+        }
+        .text-part-fill { margin-bottom: 10px; }
+
+
+        /* Estilos para preguntas tipo Test y Multichoice Test */
+        .test-options { margin-bottom: 15px; }
+        .test-option {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .test-option:hover { background-color: #e9ecef; }
+        .test-option input[type="radio"], .test-option input[type="checkbox"] { margin-right: 10px; }
+        .test-option.selected-option { background-color: #d1e7fd; border-color: #0d6efd; }
+        .test-option.correct-option { background-color: #d1e7dd; border-color: #198754; }
+        .test-option.incorrect-option { background-color: #f8d7da; border-color: #dc3545; }
+
+
+        .result-container {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none; /* Se muestra al comprobar */
+        }
+        .result-container .markdown-content h1,
+        .result-container .markdown-content h2,
+        .result-container .markdown-content h3 { margin-top: 0.5em; margin-bottom: 0.3em; line-height: 1.2;}
+        .result-container .markdown-content p { margin-bottom: 0.5em; }
+        .result-container .markdown-content ul,
+        .result-container .markdown-content ol { margin-left: 20px; margin-bottom: 0.5em; }
+        .result-container .markdown-content code { background-color: #eee; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .result-container .markdown-content pre code { display: block; padding: 10px; }
+
+        .result-correct { background: #d4edda; border: 2px solid #c3e6cb; color: #155724; }
+        .result-incorrect { background: #f8d7da; border: 2px solid #f5c6cb; color: #721c24; }
+        .result-warning { background: #fff3cd; border: 2px solid #ffeeba; color: #664d03; } /* For partially correct */
+
+
+        .explanation-section { margin-top: 10px; }
+        .rebuttal-section { margin-top: 15px; padding: 15px; background: #e9ecef; border-radius: 8px; }
+        .rebuttal-section textarea { width: 100%; min-height: 60px; margin-bottom:10px; }
+
+
+        .loading { display: none; text-align: center; padding: 20px; }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%;
+            width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Contenedor de Notificaciones */
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050; /* Encima de otros elementos */
+            width: 300px;
+        }
+        .toast-notification {
+            background-color: #333;
+            color: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateX(100%); /* Empieza fuera de la pantalla */
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast-notification.error { background-color: #dc3545; }
+        .toast-notification.success { background-color: #198754; }
+        .toast-notification.info { background-color: #0dcaf0; color: #000;}
+
+
+        .alert { /* Alertas en el flujo principal */
+            padding: 15px; border-radius: 10px; margin: 15px 0; font-weight: 600;
+            transition: opacity 0.3s ease-out;
+        }
+        .alert-error { background: #f8d7da; border: 2px solid #f5c6cb; color: #721c24; }
+        .alert-success { background: #d4edda; border: 2px solid #c3e6cb; color: #155724; }
+        .hidden { display: none !important; }
+        
+        /* Exam Configuration Section */
+        #examConfigSection {
+            background: #e9f0ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            border: 1px solid #c8d7ff;
+        }
+        #examConfigSection h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        #examConfigSection .form-group {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between label and input */
+        }
+        #examConfigSection .form-group label {
+            flex-basis: 200px; /* Fixed width for labels */
+            margin-bottom: 0; /* Override default */
+        }
+        #examConfigSection .form-group input[type="number"] {
+            flex-grow: 1; /* Input takes remaining space */
+            max-width: 80px; /* Don't let it get too wide */
+        }
+
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .config-details summary { font-size: 1.2rem; padding: 15px 20px;}
+            .header h1 { font-size: 2rem; }
+            .main-content { padding: 20px; }
+            .config-section, .file-upload-section { padding: 20px; }
+            .btn { width: 100%; margin: 8px 0; } 
+            .file-item { padding: 12px 15px; font-size: 14px; }
+            #notification-container { width: calc(100% - 40px); top:10px; right:10px; }
+            #examConfigSection .form-group { flex-direction: column; align-items: flex-start; }
+            #examConfigSection .form-group label { flex-basis: auto; margin-bottom: 5px; }
+            #examConfigSection .form-group input[type="number"] { width: 100%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📚 Gestor de Temarios Avanzado</h1>
+            <p>Genera preguntas inteligentes a partir de tus archivos Markdown usando tu API preferida</p>
+        </div>
+
+        <div class="main-content">
+            <details class="config-details" id="configDetails">
+                <summary>⚙️ Configuración de API y Preferencias</summary>
+                <div class="config-content">
+                    <div class="config-section">
+                        <h3>🔌 Proveedor de API</h3>
+                        <div class="form-group">
+                            <label for="apiProvider">Selecciona el proveedor de API:</label>
+                            <select id="apiProvider" class="form-control" onchange="handleApiProviderChange()">
+                                <option value="openrouter">OpenRouter</option>
+                                <option value="google">Google Gemini (REST API)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="config-section" id="openrouterConfigSection">
+                        <h3>🔑 Configuración OpenRouter</h3>
+                        <div class="form-group">
+                            <label for="openrouterApiKey">API Key de OpenRouter:</label>
+                            <input type="password" id="openrouterApiKey" class="form-control" placeholder="Introduce tu API Key de OpenRouter" />
+                        </div>
+                    </div>
+                    
+                    <div class="config-section hidden" id="googleConfigSection">
+                        <h3>🔑 Configuración Google Gemini</h3>
+                        <div class="form-group">
+                            <label for="googleApiKey">API Key de Google AI Studio:</label>
+                            <input type="password" id="googleApiKey" class="form-control" placeholder="Introduce tu API Key de Google" />
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                         <h3>🤖 Modelo de IA</h3>
+                        <div class="form-group">
+                            <label for="modelSelect">Selecciona el Modelo:</label>
+                            <select id="modelSelect" class="form-control">
+                                <option value="">Cargando modelos...</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="loadModels(true)" style="margin-top: 10px;">
+                                🔄 Recargar Modelos
+                            </button>
+                             <small class="model-info" id="modelProviderInfo">Los modelos se listarán según el proveedor.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="config-section">
+                        <h3>🎓 Preferencias Adicionales</h3>
+                        <div class="form-group">
+                            <label for="educationLevel">Nivel de Educación (para explicaciones):</label>
+                            <select id="educationLevel" class="form-control">
+                                <option value="Primaria">Primaria</option>
+                                <option value="Secundaria">Secundaria</option>
+                                <option value="Universitario">Universitario</option>
+                            </select>
+                            <small class="model-info">La explicación se adaptará según este nivel.</small>
+                        </div>
+                        <!-- NUEVO: Número de Preguntas -->
+                        <div class="form-group">
+                            <label for="numQuestions">Número de Preguntas a Generar (1-10):</label>
+                            <input type="number" id="numQuestions" class="form-control" value="5" min="1" max="10">
+                            <small class="model-info">Se aplicará a la generación individual y "Generar Más".</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar Configuración</button>
+                </div>
+            </details>
+
+            <div class="file-upload-section">
+                <h3>📁 Cargar Archivos Markdown</h3>
+                <div class="file-upload">
+                    <input type="file" id="fileInput" multiple accept=".md" onchange="handleFileSelection()" />
+                    <label for="fileInput" class="file-upload-btn">
+                        📤 Seleccionar archivos .md
+                    </label>
+                </div>
+                <div id="filesList" class="files-list hidden"></div>
+                
+                <div id="generationButtons" class="hidden" style="margin-top:15px; display:flex; flex-wrap:wrap; gap:10px;">
+                    <button class="btn btn-primary" style="flex-grow:1;" onclick="generateItems('development')">
+                        🧠 P. Desarrollo
+                    </button>
+                    <button class="btn btn-info" style="flex-grow:1;" onclick="generateItems('test')">
+                        📝 Test (Op. Única)
+                    </button>
+                    <!-- NUEVOS BOTONES DE GENERACIÓN -->
+                    <button class="btn btn-success" style="flex-grow:1;" onclick="generateItems('fill_in_the_blanks')">
+                        🧩 Completar Texto
+                    </button>
+                    <button class="btn btn-warning" style="flex-grow:1;" onclick="generateItems('multi_choice_test')">
+                        ☑️ Test (Op. Múltiple)
+                    </button>
+                    <button class="btn btn-exam" style="flex-grow:1; width:100%; margin-top:10px;" onclick="toggleExamConfig()">
+                        🎓 Generar Examen Mixto
+                    </button>
+                </div>
+                <!-- NUEVA SECCIÓN DE CONFIGURACIÓN DE EXAMEN -->
+                <div id="examConfigSection" class="hidden">
+                    <h4>📝 Configurar Examen (Número de preguntas por tipo)</h4>
+                    <div class="form-group">
+                        <label for="examNumDevelopment">Preguntas de Desarrollo:</label>
+                        <input type="number" id="examNumDevelopment" class="form-control" value="2" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="examNumTest">Test (Opción Única):</label>
+                        <input type="number" id="examNumTest" class="form-control" value="2" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="examNumFill">Completar Texto:</label>
+                        <input type="number" id="examNumFill" class="form-control" value="1" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="examNumMultiTest">Test (Opción Múltiple):</label>
+                        <input type="number" id="examNumMultiTest" class="form-control" value="1" min="0" max="10">
+                    </div>
+                    <button class="btn btn-primary" style="width:auto; margin-top:10px;" onclick="generateExam()">
+                        🚀 Iniciar Generación de Examen
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p id="loadingMessage">Procesando...</p>
+            </div>
+
+            <div id="questionsContainer" class="questions-container hidden">
+                <h3 id="questionsTitle">🤔 Preguntas Generadas</h3>
+                <div id="questionsList"></div>
+                <button id="generateMoreBtn" class="btn btn-secondary hidden" onclick="generateMoreItems()">
+                    🔄 Generar Más del Mismo Tipo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let selectedFileIndex = -1;
+        let currentContent = '';
+        let existingQuestions = []; 
+        let currentQuestionType = 'development'; 
+        
+        let availableModelsOpenRouter = [];
+        let availableGoogleModels = []; 
+        
+        let config = {
+            apiProvider: localStorage.getItem('api_provider') || 'openrouter',
+            openrouterApiKey: localStorage.getItem('openrouter_api_key') || '',
+            googleApiKey: localStorage.getItem('google_api_key') || '',
+            selectedModel: localStorage.getItem('selected_model') || '',
+            educationLevel: localStorage.getItem('education_level') || 'Primaria',
+            numQuestions: parseInt(localStorage.getItem('num_questions')) || 5, // Nuevo
+            lastSelectedOpenRouterModel: localStorage.getItem('last_selected_openrouter_model') || '',
+            lastSelectedGoogleModel: localStorage.getItem('last_selected_google_model') || ''
+        };
+
+        const modelIntelligenceOrderOpenRouter = [ // Keeping this, though free models are primary
+            'anthropic/claude-3.5-sonnet', 'openai/gpt-4', 'openai/gpt-4-turbo', 'google/gemini-pro-1.5',
+            'meta-llama/llama-3.1-405b', 'meta-llama/llama-3.1-70b', 'deepseek/deepseek-r1', 'qwen/qwen-2.5-72b',
+            'microsoft/wizardlm-2-8x22b', 'meta-llama/llama-3.1-8b', 'google/gemma-2-27b', 'mistralai/mixtral-8x7b',
+            'microsoft/phi-3', 'google/gemma-2-9b'
+        ];
+        
+        async function init() {
+            document.getElementById('apiProvider').value = config.apiProvider;
+            document.getElementById('openrouterApiKey').value = config.openrouterApiKey;
+            document.getElementById('googleApiKey').value = config.googleApiKey;
+            document.getElementById('educationLevel').value = config.educationLevel;
+            document.getElementById('numQuestions').value = config.numQuestions; // Nuevo
+
+            handleApiProviderChange(false); 
+
+            const configDetails = document.getElementById('configDetails');
+            if ( (config.apiProvider === 'openrouter' && !config.openrouterApiKey) ||
+                 (config.apiProvider === 'google' && !config.googleApiKey) ) {
+                configDetails.open = true;
+            }
+        }
+        
+        function handleApiProviderChange(showAlerts = true) {
+            config.apiProvider = document.getElementById('apiProvider').value;
+            const openrouterSection = document.getElementById('openrouterConfigSection');
+            const googleSection = document.getElementById('googleConfigSection');
+            const modelProviderInfo = document.getElementById('modelProviderInfo');
+
+            if (config.apiProvider === 'openrouter') {
+                openrouterSection.classList.remove('hidden');
+                googleSection.classList.add('hidden');
+                modelProviderInfo.textContent = "Modelos de OpenRouter. Introduce tu API Key de OpenRouter.";
+                config.selectedModel = config.lastSelectedOpenRouterModel || ''; 
+            } else { 
+                openrouterSection.classList.add('hidden');
+                googleSection.classList.remove('hidden');
+                modelProviderInfo.textContent = "Modelos de Google Gemini (vía REST API). Introduce tu API Key de Google.";
+                config.selectedModel = config.lastSelectedGoogleModel || ''; 
+            }
+            loadModels(showAlerts); 
+        }
+
+        function saveConfig() {
+            config.apiProvider = document.getElementById('apiProvider').value;
+            config.openrouterApiKey = document.getElementById('openrouterApiKey').value.trim();
+            config.googleApiKey = document.getElementById('googleApiKey').value.trim();
+            config.selectedModel = document.getElementById('modelSelect').value;
+            config.educationLevel = document.getElementById('educationLevel').value;
+            config.numQuestions = parseInt(document.getElementById('numQuestions').value) || 5; // Nuevo
+
+            if (config.numQuestions < 1 || config.numQuestions > 10) {
+                showToast('El número de preguntas debe estar entre 1 y 10.', 'error');
+                config.numQuestions = Math.max(1, Math.min(10, config.numQuestions)); // Clamp value
+                document.getElementById('numQuestions').value = config.numQuestions;
+                return;
+            }
+
+
+            if (config.apiProvider === 'openrouter') {
+                if (!config.openrouterApiKey) { showToast('Por favor, introduce una API Key de OpenRouter.', 'error'); return; }
+                config.lastSelectedOpenRouterModel = config.selectedModel;
+            } else { 
+                if (!config.googleApiKey) { showToast('Por favor, introduce una API Key de Google.', 'error'); return; }
+                config.lastSelectedGoogleModel = config.selectedModel;
+            }
+            
+            const isApiReady = (config.apiProvider === 'openrouter' && config.openrouterApiKey) ||
+                               (config.apiProvider === 'google' && config.googleApiKey);
+            
+            if (isApiReady && !config.selectedModel) {
+                 showToast('Por favor, selecciona un modelo de IA.', 'error');
+            }
+
+            localStorage.setItem('api_provider', config.apiProvider);
+            localStorage.setItem('openrouter_api_key', config.openrouterApiKey);
+            localStorage.setItem('google_api_key', config.googleApiKey);
+            localStorage.setItem('selected_model', config.selectedModel); 
+            localStorage.setItem('education_level', config.educationLevel);
+            localStorage.setItem('num_questions', config.numQuestions); // Nuevo
+            localStorage.setItem('last_selected_openrouter_model', config.lastSelectedOpenRouterModel);
+            localStorage.setItem('last_selected_google_model', config.lastSelectedGoogleModel);
+            
+            showToast('Configuración guardada correctamente.', 'success');
+        }
+
+        async function loadModels(showAlerts = true) { 
+            const select = document.getElementById('modelSelect');
+            select.innerHTML = '<option value="">Cargando modelos...</option>';
+
+            if (config.apiProvider === 'openrouter') {
+                await loadOpenRouterModels(showAlerts);
+            } else { 
+                await loadGoogleModelsFromApi(showAlerts);
+            }
+        }
+        
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+        function getModelIntelligenceIndex(modelId, orderArray) {
+            for (let i = 0; i < orderArray.length; i++) {
+                if (modelId.toLowerCase().includes(orderArray[i].toLowerCase()) ||
+                    modelId.toLowerCase().startsWith(orderArray[i].toLowerCase())) {
+                    return i;
+                }
+            }
+            return orderArray.length;
+        }
+
+        async function loadOpenRouterModels(showAlerts = true) {
+            const apiKey = config.openrouterApiKey;
+            const select = document.getElementById('modelSelect');
+
+            if (!apiKey) {
+                if (showAlerts) showToast('Introduce tu API Key de OpenRouter para cargar sus modelos.', 'error');
+                select.innerHTML = '<option value="">API Key de OpenRouter requerida</option>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/models', {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(`Error ${response.status}: ${errorData?.error?.message || response.statusText}`);
+                }
+
+                const data = await response.json();
+                availableModelsOpenRouter = data.data;
+
+                const freeModels = availableModelsOpenRouter.filter(model => {
+                    const price = parseFloat(model.pricing?.prompt || '1');
+                    return price === 0 || model.id.includes(':free');
+                });
+
+                freeModels.sort((a, b) => getModelIntelligenceIndex(a.id, modelIntelligenceOrderOpenRouter) - getModelIntelligenceIndex(b.id, modelIntelligenceOrderOpenRouter));
+                
+                select.innerHTML = '<option value="">Selecciona un modelo de OpenRouter</option>';
+                freeModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = `${model.name || model.id} (${formatContextLength(model.context_length)})`;
+                    select.appendChild(option);
+                });
+                
+                const modelToSelect = config.lastSelectedOpenRouterModel || (freeModels.length > 0 ? freeModels[0].id : '');
+                if (modelToSelect && freeModels.some(m => m.id === modelToSelect)) {
+                    select.value = modelToSelect;
+                } else if (freeModels.length > 0) {
+                     select.value = freeModels[0].id;
+                }
+                config.selectedModel = select.value;
+
+                if (showAlerts && freeModels.length > 0) showToast(`${freeModels.length} modelos gratuitos de OpenRouter cargados.`, 'success');
+                else if (showAlerts && freeModels.length === 0) showToast('No se encontraron modelos gratuitos de OpenRouter.', 'info');
+
+
+            } catch (error) {
+                console.error('Error cargando modelos de OpenRouter:', error);
+                select.innerHTML = `<option value="">Error al cargar modelos OpenRouter</option><option value="deepseek/deepseek-r1-0528:free">DeepSeek R1 (Fallback)</option>`;
+                 if(select.options.length > 1 && select.options[1]) select.value = select.options[1].value;
+                config.selectedModel = select.value;
+                if (showAlerts) showToast(`Error cargando modelos OpenRouter: ${error.message}. Usando fallback.`, 'error');
+            }
+        }
+
+        async function fetchGoogleModelsFromApiViaRest(apiKey) {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                throw new Error(`Error ${response.status} al obtener modelos de Google: ${errorData.error?.message || errorData.message}`);
+            }
+            const data = await response.json();
+            return data.models
+                .filter(model => model.supportedGenerationMethods && model.supportedGenerationMethods.includes("generateContent") &&
+                                 !model.displayName?.toLowerCase().includes("embedding") &&
+                                 !model.name?.toLowerCase().includes("vision") && 
+                                 !model.displayName?.toLowerCase().includes("deprecated") &&
+                                 (model.name?.includes("gemini") || model.name?.includes("gemma")) 
+                                 )
+                .map(model => ({
+                    id: model.name, 
+                    name: model.displayName 
+                }))
+                .sort((a,b) => a.name.localeCompare(b.name));
+        }
+
+        async function loadGoogleModelsFromApi(showAlerts = true) {
+            const select = document.getElementById('modelSelect');
+            if (!config.googleApiKey) {
+                if (showAlerts) showToast('Introduce tu API Key de Google para listar modelos Gemini.', 'error');
+                select.innerHTML = '<option value="">API Key de Google requerida</option>';
+                return;
+            }
+
+            try {
+                availableGoogleModels = await fetchGoogleModelsFromApiViaRest(config.googleApiKey);
+                
+                select.innerHTML = '<option value="">Selecciona un modelo de Google Gemini</option>';
+                if (availableGoogleModels.length === 0) {
+                     if (showAlerts) showToast('No se encontraron modelos de Google compatibles mediante la API o tu API Key no tiene acceso.', 'info');
+                     select.innerHTML = '<option value="">No hay modelos Gemini disponibles</option>';
+                     config.selectedModel = '';
+                     return;
+                }
+
+                availableGoogleModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id; 
+                    option.textContent = `${model.name} (${model.id.split('/')[1]})`;
+                    select.appendChild(option);
+                });
+
+                const modelToSelect = config.lastSelectedGoogleModel || (availableGoogleModels.length > 0 ? availableGoogleModels[0].id : '');
+                if (modelToSelect && availableGoogleModels.some(m => m.id === modelToSelect)) {
+                    select.value = modelToSelect;
+                } else if (availableGoogleModels.length > 0) {
+                    select.value = availableGoogleModels[0].id;
+                }
+                config.selectedModel = select.value;
+                
+                if (showAlerts) showToast(`${availableGoogleModels.length} modelos de Google Gemini cargados desde la API.`, 'success');
+
+            } catch (error) {
+                console.error('Error cargando modelos de Google desde API REST:', error);
+                select.innerHTML = `<option value="">Error al cargar modelos de Google</option>`;
+                const fallbackGoogleModels = [ 
+                    { id: "models/gemini-1.5-flash-latest", name: "Gemini 1.5 Flash (Fallback)" },
+                    { id: "models/gemini-pro", name: "Gemini Pro (Fallback)" }
+                ];
+                fallbackGoogleModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id; 
+                    option.textContent = model.name;
+                    select.appendChild(option);
+                });
+                if(select.options.length > 1 && select.options[1]) select.value = select.options[1].value;
+
+                config.selectedModel = select.value;
+                if (showAlerts) showToast(`Error cargando modelos Google: ${error.message}. Usando lista de fallback.`, 'error');
+            }
+        }
+
+        function formatContextLength(length) {
+            if (!length) return 'N/A';
+            if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M tokens`;
+            if (length >= 1000) return `${(length / 1000).toFixed(0)}K tokens`;
+            return `${length} tokens`;
+        }
+
+        function handleFileSelection() {
+            const files = Array.from(document.getElementById('fileInput').files);
+            selectedFiles = files.filter(file => file.name.endsWith('.md'));
+
+            if (selectedFiles.length === 0) {
+                showToast('No se encontraron archivos .md válidos.', 'error'); return;
+            }
+            existingQuestions = [];
+            document.getElementById('questionsList').innerHTML = '';
+            document.getElementById('questionsContainer').classList.add('hidden');
+            document.getElementById('examConfigSection').classList.add('hidden'); // Hide exam config too
+            displayFilesList();
+        }
+
+        function displayFilesList() {
+            const container = document.getElementById('filesList');
+            const generationButtonsDiv = document.getElementById('generationButtons'); 
+            container.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `<span>📄 ${file.name}</span><span>${formatFileSize(file.size)}</span>`;
+                item.onclick = () => selectFile(index);
+                container.appendChild(item);
+            });
+            container.classList.remove('hidden');
+            generationButtonsDiv.classList.add('hidden'); 
+        }
+
+        function selectFile(index) {
+            selectedFileIndex = index;
+            document.querySelectorAll('.file-item').forEach((item, i) => item.classList.toggle('selected', i === index));
+            document.getElementById('generationButtons').classList.remove('hidden'); 
+            document.getElementById('examConfigSection').classList.add('hidden'); // Hide exam config on file change
+            existingQuestions = [];
+            document.getElementById('questionsList').innerHTML = '';
+            document.getElementById('questionsContainer').classList.add('hidden');
+        }
+        
+        function validateApiConfig() {
+            if (config.apiProvider === 'openrouter') {
+                if (!config.openrouterApiKey) { showToast('Configura tu API Key de OpenRouter.', 'error'); return false; }
+            } else { 
+                if (!config.googleApiKey) { showToast('Configura tu API Key de Google.', 'error'); return false; }
+            }
+            if (!config.selectedModel) { showToast('Selecciona un modelo de IA en la configuración.', 'error'); return false; }
+            return true;
+        }
+        
+        function getNumQuestionsToGenerate() {
+            const num = parseInt(document.getElementById('numQuestions').value);
+            if (isNaN(num) || num < 1 || num > 10) {
+                showToast('Número de preguntas inválido. Usando 5 por defecto.', 'info');
+                return 5;
+            }
+            return num;
+        }
+
+        async function generateItems(type) { 
+            if (!validateApiConfig()) return;
+            if (selectedFileIndex === -1) { showToast('Por favor, selecciona un archivo.', 'error'); return; }
+
+            currentQuestionType = type; // Keep track for "Generate More"
+            const file = selectedFiles[selectedFileIndex];
+            currentContent = await readFileContent(file);
+            existingQuestions = []; 
+
+            let loadingMsg = "Generando...";
+            let questionsTitleText = "Preguntas Generadas";
+            const numItemsToGenerate = getNumQuestionsToGenerate();
+
+
+            if (type === 'development') {
+                loadingMsg = `Generando ${numItemsToGenerate} preguntas de desarrollo...`;
+                questionsTitleText = '🧠 Preguntas de Desarrollo Generadas';
+            } else if (type === 'test') {
+                loadingMsg = `Generando ${numItemsToGenerate} tests (opción única)...`;
+                questionsTitleText = '📝 Test (Opción Única) Generado';
+            } else if (type === 'fill_in_the_blanks') {
+                loadingMsg = `Generando ${numItemsToGenerate} ejercicios de completar texto...`;
+                questionsTitleText = '🧩 Ejercicios de Completar Texto Generados';
+            } else if (type === 'multi_choice_test') {
+                loadingMsg = `Generando ${numItemsToGenerate} tests (opción múltiple)...`;
+                questionsTitleText = '☑️ Test (Opción Múltiple) Generado';
+            }
+            
+            showLoading(true, loadingMsg);
+            document.getElementById('questionsContainer').classList.add('hidden');
+            document.getElementById('questionsList').innerHTML = '';
+            document.getElementById('questionsTitle').textContent = questionsTitleText;
+
+            try {
+                let prompt = `Eres un asistente experto en crear material de estudio.
+Temario base:
+---
+${currentContent}
+---
+Por favor, genera ${numItemsToGenerate} preguntas basadas EXCLUSIVAMENTE en el temario proporcionado.
+Limítate al formato JSON indicado. No incluyas explicaciones, contexto adicional o palabras fuera del formato JSON.
+La respuesta debe ser únicamente un array JSON.`;
+                let expectedJsonType = "questions_array";
+
+                if (type === 'development') {
+                    prompt += `
+Tipo de pregunta: Desarrollo corto.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[
+    {"question_type": "development", "question": "Pregunta de desarrollo 1"},
+    {"question_type": "development", "question": "Pregunta de desarrollo 2"},
+    ...
+]`;
+                } else if (type === 'test') {
+                    prompt += `
+Tipo de pregunta: Test de opción múltiple (una sola respuesta correcta).
+Cada pregunta debe tener 4 opciones (A, B, C, D), indicar cuál es la opción correcta (A, B, C, o D) y una breve justificación de por qué esa opción es correcta.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[
+    {
+        "question_type": "test",
+        "question": "Pregunta test 1?",
+        "options": { "A": "Opción A", "B": "Opción B", "C": "Opción C", "D": "Opción D" },
+        "correct_option": "C", 
+        "justification": "La opción C es correcta porque..."
+    },
+    ...
+]`;
+                } else if (type === 'fill_in_the_blanks') {
+                     prompt += `
+Tipo de pregunta: Completar texto (rellenar huecos).
+Genera un texto con huecos para rellenar. Proporciona las partes del texto y las soluciones para los huecos.
+Debe haber al menos un hueco y como máximo tres por pregunta.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[
+    {
+        "question_type": "fill_in_the_blanks",
+        "question": "Completa el siguiente texto:", // O una instrucción similar
+        "text_parts": ["El sol sale por el ", " y se oculta por el ", "."],
+        "solutions": ["este", "oeste"] 
+    },
+    {
+        "question_type": "fill_in_the_blanks",
+        "question": "Rellena los espacios:",
+        "text_parts": ["La fórmula química del agua es ", "."],
+        "solutions": ["H2O"]
+    },
+    ...
+]`;
+                } else if (type === 'multi_choice_test') {
+                    prompt += `
+Tipo de pregunta: Test de opción múltiple (UNA O MÁS respuestas pueden ser correctas).
+Cada pregunta debe tener 4-5 opciones, indicar TODAS las opciones correctas (como un array de letras, ej: ["A", "C"]) y una breve justificación general.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[
+    {
+        "question_type": "multi_choice_test",
+        "question": "Pregunta test multirespuesta 1?",
+        "options": { "A": "Opción A", "B": "Opción B", "C": "Opción C", "D": "Opción D" },
+        "correct_options": ["A", "C"], 
+        "justification": "Las opciones A y C son correctas porque..."
+    },
+    ...
+]`;
+                }
+                
+                const items = await callLLMApi(prompt, expectedJsonType);
+                if (items && items.length > 0) {
+                    displayItems(items);
+                    existingQuestions = [...items]; 
+                    document.getElementById('generateMoreBtn').classList.remove('hidden');
+                    document.getElementById('generateMoreBtn').onclick = () => generateMoreItems(currentQuestionType); // Set type for "more"
+                } else {
+                    showToast('La IA no devolvió preguntas válidas. Intenta de nuevo o con otro modelo.', 'error');
+                }
+
+            } catch (error) {
+                showToast(`Error al generar ${type.replace('_', ' ')}: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function generateMoreItems(typeOverride = null) {
+            if (!validateApiConfig() || !currentContent) {
+                showToast('Primero genera contenido para un archivo.', 'error'); return;
+            }
+            const typeToGenerate = typeOverride || currentQuestionType; // Use override if provided, else current
+            const numItemsToGenerate = getNumQuestionsToGenerate(); // Use the configured number
+
+            let loadingMsg = "Generando más...";
+             if (typeToGenerate === 'development') loadingMsg = `Generando ${numItemsToGenerate} preguntas de desarrollo adicionales...`;
+             else if (typeToGenerate === 'test') loadingMsg = `Generando ${numItemsToGenerate} tests (op. única) adicionales...`;
+             else if (typeToGenerate === 'fill_in_the_blanks') loadingMsg = `Generando ${numItemsToGenerate} ejercicios de completar adicionales...`;
+             else if (typeToGenerate === 'multi_choice_test') loadingMsg = `Generando ${numItemsToGenerate} tests (op. múltiple) adicionales...`;
+
+            showLoading(true, loadingMsg);
+
+            try {
+                let prompt = `Eres un asistente experto en crear material de estudio.
+Temario base:
+---
+${currentContent}
+---
+Por favor, genera ${numItemsToGenerate} preguntas NUEVAS Y DIFERENTES de las ya existentes, basadas EXCLUSIVAMENTE en el temario proporcionado.
+Preguntas ya creadas (evita repetirlas o hacerlas muy similares):
+${existingQuestions.map(q => `- ${q.question}`).join('\n')}
+
+Limítate al formato JSON indicado. No incluyas explicaciones, contexto adicional o palabras fuera del formato JSON.
+La respuesta debe ser únicamente un array JSON.`;
+                let expectedJsonType = "questions_array";
+
+                if (typeToGenerate === 'development') {
+                    prompt += `
+Tipo de pregunta: Desarrollo corto.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[ {"question_type": "development", "question": "Nueva pregunta de desarrollo"}, ... ]`;
+                } else if (typeToGenerate === 'test') {
+                    prompt += `
+Tipo de pregunta: Test de opción múltiple (una sola respuesta correcta). 4 opciones (A,B,C,D).
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[ {"question_type": "test", "question": "...", "options": {...}, "correct_option": "X", "justification": "..."}, ... ]`;
+                } else if (typeToGenerate === 'fill_in_the_blanks') {
+                    prompt += `
+Tipo de pregunta: Completar texto. 1-3 huecos.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[ {"question_type": "fill_in_the_blanks", "question": "...", "text_parts": ["...", "..."], "solutions": ["..."]}, ... ]`;
+                } else if (typeToGenerate === 'multi_choice_test') {
+                    prompt += `
+Tipo de pregunta: Test de opción múltiple (UNA O MÁS respuestas correctas). 4-5 opciones.
+**Formato Obligatorio para cada pregunta (JSON Array):**
+[ {"question_type": "multi_choice_test", "question": "...", "options": {...}, "correct_options": ["X", "Y"], "justification": "..."}, ... ]`;
+                }
+
+                const newItems = await callLLMApi(prompt, expectedJsonType);
+                if (newItems && newItems.length > 0) {
+                    appendItems(newItems);
+                    existingQuestions = [...existingQuestions, ...newItems];
+                } else {
+                     showToast('La IA no devolvió más preguntas válidas.', 'info');
+                }
+            } catch (error) {
+                showToast(`Error al generar más: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function toggleExamConfig() {
+            const examConfigSection = document.getElementById('examConfigSection');
+            examConfigSection.classList.toggle('hidden');
+        }
+
+        async function generateExam() {
+            if (!validateApiConfig()) return;
+            if (selectedFileIndex === -1) { showToast('Por favor, selecciona un archivo.', 'error'); return; }
+
+            const numDev = parseInt(document.getElementById('examNumDevelopment').value) || 0;
+            const numTest = parseInt(document.getElementById('examNumTest').value) || 0;
+            const numFill = parseInt(document.getElementById('examNumFill').value) || 0;
+            const numMultiTest = parseInt(document.getElementById('examNumMultiTest').value) || 0;
+
+            const totalExamQuestions = numDev + numTest + numFill + numMultiTest;
+
+            if (totalExamQuestions === 0) {
+                showToast('Especifica al menos una pregunta para el examen.', 'error');
+                return;
+            }
+            if (totalExamQuestions > 20) { // Safety cap for LLM
+                showToast('El número total de preguntas para el examen no debe exceder 20.', 'error');
+                return;
+            }
+
+            currentContent = await readFileContent(selectedFiles[selectedFileIndex]);
+            existingQuestions = []; 
+            currentQuestionType = 'exam'; // Special type for tracking
+
+            showLoading(true, `Generando examen con ${totalExamQuestions} preguntas...`);
+            document.getElementById('questionsContainer').classList.add('hidden');
+            document.getElementById('questionsList').innerHTML = '';
+            document.getElementById('questionsTitle').textContent = '🎓 Examen Mixto Generado';
+            document.getElementById('examConfigSection').classList.add('hidden'); // Hide config after starting
+
+            try {
+                let prompt = `Eres un asistente experto en crear exámenes diversificados.
+Temario base:
+---
+${currentContent}
+---
+Por favor, genera un examen mixto basado EXCLUSIVAMENTE en el temario proporcionado.
+El examen debe contener EXACTAMENTE la siguiente distribución de preguntas PERO NO DEBE DE TENER EL MISMO ORDEN, sería antinatural que siempre sigan ese tipo de orden (Desarrollo test rellenar y multichoice), puedes seguir el orden del temario pero no el de los tipos de preguntas.:
+- ${numDev} preguntas de tipo "development" (desarrollo corto).
+- ${numTest} preguntas de tipo "test" (opción múltiple, una sola respuesta correcta, 4 opciones A,B,C,D).
+- ${numFill} preguntas de tipo "fill_in_the_blanks" (completar texto, 1-3 huecos).
+- ${numMultiTest} preguntas de tipo "multi_choice_test" (opción múltiple, UNA O MÁS respuestas correctas, 4-5 opciones).
+
+Asegúrate de que el contenido de cada pregunta sea el más adecuado para su tipo.
+La respuesta debe ser un ÚNICO array JSON que contenga TODAS las ${totalExamQuestions} preguntas.
+Cada objeto de pregunta en el array DEBE incluir un campo "question_type" con uno de los siguientes valores: "development", "test", "fill_in_the_blanks", "multi_choice_test".
+Sigue estrictamente los formatos JSON para cada tipo de pregunta como se detalla a continuación. No incluyas explicaciones, contexto adicional o palabras fuera del formato JSON.
+
+Formatos JSON específicos por tipo de pregunta:
+1.  Para "development":
+    {"question_type": "development", "question": "Pregunta de desarrollo"}
+
+2.  Para "test":
+    {"question_type": "test", "question": "Pregunta test?", "options": {"A":"OpA", "B":"OpB", "C":"OpC", "D":"OpD"}, "correct_option": "C", "justification": "Justificación..."}
+
+3.  Para "fill_in_the_blanks":
+    {"question_type": "fill_in_the_blanks", "question": "Completa:", "text_parts": ["Parte 1 ", " parte 2 ", "."], "solutions": ["sol1", "sol2"]}
+
+4.  Para "multi_choice_test":
+    {"question_type": "multi_choice_test", "question": "Pregunta multirespuesta?", "options": {"A":"OpA", "B":"OpB", "C":"OpC", "D":"OpD"}, "correct_options": ["A", "C"], "justification": "Justificación..."}
+
+Genera el array JSON y nada más.`;
+
+                const items = await callLLMApi(prompt, "questions_array");
+
+                if (items && items.length > 0) {
+                    if (items.length !== totalExamQuestions) {
+                        showToast(`La IA generó ${items.length} preguntas en lugar de las ${totalExamQuestions} solicitadas. Mostrando las generadas.`, 'info');
+                    }
+                    displayItems(items);
+                    existingQuestions = [...items];
+                    // "Generate More" is disabled for exam mode for simplicity, as it's a fixed set.
+                    document.getElementById('generateMoreBtn').classList.add('hidden'); 
+                } else {
+                    showToast('La IA no devolvió preguntas válidas para el examen. Intenta de nuevo.', 'error');
+                }
+
+            } catch (error) {
+                showToast(`Error al generar examen: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function callLLMApi(prompt, expectedJsonType = "questions_array") {
+            const modelId = config.selectedModel;
+            let responseText;
+
+            if (config.apiProvider === 'openrouter') {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${config.openrouterApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] })
+                });
+                if (!response.ok) { 
+                    const errorText = await response.text();
+                    throw new Error(`OpenRouter Error ${response.status}: ${errorText}`); 
+                }
+                const data = await response.json();
+                responseText = data.choices[0].message.content;
+
+            } else { // google (REST API)
+                const GOOGLE_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/${modelId}:generateContent?key=${config.googleApiKey}`;
+                const requestBody = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                     generationConfig: { responseMimeType: "application/json" } // Crucial for Gemini
+                };
+
+                const response = await fetch(GOOGLE_API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    console.error("Google API Error Response:", errorData);
+                    throw new Error(`Google API Error ${response.status}: ${errorData.error?.message || errorData.message}`);
+                }
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+                    responseText = data.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Respuesta inesperada de Google API:", data);
+                    if (data.promptFeedback && data.promptFeedback.blockReason) {
+                         throw new Error(`Google API bloqueó el prompt: ${data.promptFeedback.blockReason}. Detalles: ${data.promptFeedback.blockReasonMessage || ''}`);
+                    }
+                    throw new Error("Formato de respuesta de Google API inesperado.");
+                }
+            }
+            
+            const jsonWrapperMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+            if (jsonWrapperMatch && jsonWrapperMatch[1]) {
+                responseText = jsonWrapperMatch[1];
+            }
+            
+            try {
+                const parsedJson = JSON.parse(responseText);
+                if (expectedJsonType === "questions_array" && !Array.isArray(parsedJson)) {
+                    // Try to recover if it's an object with a "questions" array (some models do this)
+                    if (typeof parsedJson === 'object' && parsedJson !== null && Array.isArray(parsedJson.questions)) {
+                        return parsedJson.questions;
+                    }
+                    if (typeof parsedJson === 'object' && parsedJson !== null && Array.isArray(parsedJson.exam)) { // For exam mode
+                        return parsedJson.exam;
+                    }
+                    throw new Error("Respuesta no fue un array JSON. Contenido: " + responseText.substring(0, 200));
+                }
+                if (expectedJsonType === "evaluation_object" && (Array.isArray(parsedJson) || typeof parsedJson !== 'object')) {
+                     throw new Error("Respuesta no fue un objeto JSON. Contenido: " + responseText.substring(0, 200));
+                }
+                return parsedJson;
+            } catch (e) {
+                console.error("Error al parsear JSON:", e, "Respuesta original:", responseText);
+                throw new Error(`Formato de IA inválido: ${e.message}. Contenido: ${responseText.substring(0,100)}...`);
+            }
+        }
+
+
+        function displayItems(items) {
+            const container = document.getElementById('questionsContainer');
+            const list = document.getElementById('questionsList');
+            list.innerHTML = ''; 
+            items.forEach((item, index) => {
+                // Validate item structure before creating element
+                if (!item || !item.question_type || !item.question) {
+                    console.warn("Skipping invalid item:", item);
+                    const errorItemEl = document.createElement('div');
+                    errorItemEl.className = 'question-item';
+                    errorItemEl.innerHTML = `<p class="alert alert-error">Error: Pregunta mal formada recibida de la API.</p>`;
+                    list.appendChild(errorItemEl);
+                    return; 
+                }
+                const itemEl = createItemElement(item, index);
+                list.appendChild(itemEl);
+            });
+            container.classList.remove('hidden');
+        }
+
+        function appendItems(items) {
+            const list = document.getElementById('questionsList');
+            const currentItemCount = list.children.length;
+            items.forEach((item, index) => {
+                 if (!item || !item.question_type || !item.question) {
+                    console.warn("Skipping invalid item for append:", item);
+                    return; 
+                }
+                const itemEl = createItemElement(item, currentItemCount + index);
+                list.appendChild(itemEl);
+            });
+        }
+        
+        function createItemElement(itemData, index) {
+            const div = document.createElement('div');
+            div.className = 'question-item';
+            div.setAttribute('data-id', index); 
+            
+            let itemHTML = `<div class="question-text">`;
+            if (itemData.question_type === 'development') itemHTML += '🧠 ';
+            else if (itemData.question_type === 'test') itemHTML += '📝 ';
+            else if (itemData.question_type === 'fill_in_the_blanks') itemHTML += '🧩 ';
+            else if (itemData.question_type === 'multi_choice_test') itemHTML += '☑️ ';
+            itemHTML += `${itemData.question}</div>`;
+
+
+            if (itemData.question_type === 'development') {
+                itemHTML += `
+                    <textarea class="answer-input" id="answer-${index}" placeholder="Escribe tu respuesta aquí..."></textarea>
+                    <button class="btn btn-primary" onclick="checkDevelopmentAnswer(${index})">
+                        📝 Comprobar Desarrollo
+                    </button>
+                `;
+            } else if (itemData.question_type === 'test') { // Single choice
+                itemHTML += '<div class="test-options">';
+                if (itemData.options && typeof itemData.options === 'object') {
+                    for (const key in itemData.options) {
+                        itemHTML += `
+                            <label class="test-option" for="option-${index}-${key}">
+                                <input type="radio" name="options-${index}" id="option-${index}-${key}" value="${key}">
+                                ${key}) ${itemData.options[key]}
+                            </label>
+                        `;
+                    }
+                } else { itemHTML += `<p class="alert alert-error">Error: Opciones no encontradas para esta pregunta.</p>`;}
+                itemHTML += '</div>';
+                itemHTML += `
+                    <button class="btn btn-primary" onclick="checkTestAnswer(${index})">
+                        📝 Comprobar Test (Op. Única)
+                    </button>
+                `;
+            } else if (itemData.question_type === 'fill_in_the_blanks') {
+                 if (itemData.text_parts && Array.isArray(itemData.text_parts) && itemData.solutions && Array.isArray(itemData.solutions)) {
+                    itemHTML += '<div class="text-part-fill">';
+                    itemData.text_parts.forEach((part, i) => {
+                        itemHTML += `<span>${marked.parseInline(part || "")}</span>`; // Render markdown in text parts
+                        if (i < itemData.solutions.length) {
+                            itemHTML += `<input type="text" class="fill-blank-input" id="fill-${index}-${i}" placeholder="Respuesta ${i+1}">`;
+                        }
+                    });
+                    itemHTML += '</div>';
+                    itemHTML += `
+                        <button class="btn btn-primary" onclick="checkFillInTheBlanksAnswer(${index})">
+                            📝 Comprobar Completar
+                        </button>
+                    `;
+                 } else { itemHTML += `<p class="alert alert-error">Error: Formato de completar texto inválido.</p>`;}
+
+            } else if (itemData.question_type === 'multi_choice_test') { // Multiple choice
+                itemHTML += '<div class="test-options">';
+                if (itemData.options && typeof itemData.options === 'object') {
+                    for (const key in itemData.options) {
+                        itemHTML += `
+                            <label class="test-option" for="option-${index}-${key}">
+                                <input type="checkbox" name="options-${index}-${key}" id="option-${index}-${key}" value="${key}">
+                                ${key}) ${itemData.options[key]}
+                            </label>
+                        `;
+                    }
+                } else { itemHTML += `<p class="alert alert-error">Error: Opciones no encontradas para esta pregunta.</p>`;}
+                itemHTML += '</div>';
+                itemHTML += `
+                    <button class="btn btn-primary" onclick="checkMultiTestAnswer(${index})">
+                        📝 Comprobar Test (Op. Múltiple)
+                    </button>
+                `;
+            }
+
+            itemHTML += `<div class="result-container" id="result-${index}"></div>`;
+            div.innerHTML = itemHTML;
+            return div;
+        }
+        
+        async function checkDevelopmentAnswer(index) {
+            if (!validateApiConfig()) return;
+            const itemData = existingQuestions[index];
+            if (!itemData) { showToast('Error: Datos de pregunta no encontrados.', 'error'); return; }
+            const answer = document.getElementById(`answer-${index}`).value.trim();
+            if (!answer) { showToast('Por favor, escribe una respuesta', 'error'); return; }
+
+            const resultContainer = document.getElementById(`result-${index}`);
+            resultContainer.innerHTML = '<div class="spinner"></div><p>Evaluando respuesta...</p>';
+            resultContainer.style.display = 'block';
+            resultContainer.className = 'result-container'; 
+
+            try {
+                const prompt = `Evalúa la siguiente respuesta a la pregunta de desarrollo. Sé estricto pero justo.
+Adapta la explicación al nivel de educación: ${config.educationLevel}. La explicación debe estar en formato Markdown.
+Temario relevante (para contexto, no para copiar):
+${currentContent.substring(0, 1500)} 
+Pregunta:
+${itemData.question}
+Respuesta del usuario:
+${answer}
+**Formato Obligatorio (solo el JSON object):**
+{
+    "status": "correcto" | "incorrecto" | "parcialmente_correcto",
+    "explanation": "Explicación en Markdown de por qué (lenguaje apropiado para ${config.educationLevel})."
+}
+Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.`;
+                const result = await callLLMApi(prompt, "evaluation_object");
+                displayEvaluationResult(index, result, itemData.question, answer, itemData.question_type);
+            } catch (error) {
+                resultContainer.innerHTML = `<p>❌ Error al evaluar: ${error.message}</p>`;
+                resultContainer.className = 'result-container result-incorrect';
+                resultContainer.style.display = 'block';
+                 showToast(`Error al evaluar: ${error.message}`, 'error');
+            }
+        }
+
+        function checkTestAnswer(index) { // Single choice
+            const itemData = existingQuestions[index];
+            if (!itemData || !itemData.options) { showToast('Error: Datos de pregunta test no encontrados.', 'error'); return; }
+            const selectedOptionInput = document.querySelector(`input[name="options-${index}"]:checked`);
+            
+            if (!selectedOptionInput) {
+                showToast('Por favor, selecciona una opción.', 'error');
+                return;
+            }
+            const userAnswer = selectedOptionInput.value; 
+            const isCorrect = userAnswer === itemData.correct_option;
+            
+            const optionLabels = document.querySelectorAll(`#questionsList .question-item[data-id="${index}"] .test-option`);
+            optionLabels.forEach(label => {
+                const input = label.querySelector('input[type="radio"]');
+                label.classList.remove('selected-option', 'correct-option', 'incorrect-option');
+                if (input.value === itemData.correct_option) {
+                    label.classList.add('correct-option');
+                }
+                if (input.checked) {
+                    label.classList.add('selected-option');
+                    if (!isCorrect && input.value !== itemData.correct_option) {
+                        label.classList.add('incorrect-option');
+                    }
+                }
+            });
+
+            const resultData = {
+                status: isCorrect ? 'correcto' : 'incorrecto',
+                explanation: itemData.justification || (isCorrect ? "Respuesta correcta." : "Respuesta incorrecta.")
+            };
+            displayEvaluationResult(index, resultData, itemData.question, `Opción ${userAnswer}: ${itemData.options[userAnswer]}`, itemData.question_type);
+        }
+
+        function checkFillInTheBlanksAnswer(index) {
+            const itemData = existingQuestions[index];
+            if (!itemData || !itemData.text_parts || !itemData.solutions) { 
+                showToast('Error: Datos de pregunta para completar no encontrados.', 'error'); 
+                return; 
+            }
+
+            const userAnswers = [];
+            let allFilled = true;
+            for (let i = 0; i < itemData.solutions.length; i++) {
+                const inputElement = document.getElementById(`fill-${index}-${i}`);
+                if (inputElement) {
+                    const val = inputElement.value.trim();
+                    if (!val) allFilled = false;
+                    userAnswers.push(val);
+                } else { // Should not happen if rendering is correct
+                    userAnswers.push(""); 
+                    allFilled = false;
+                }
+            }
+
+            if (!allFilled) {
+                showToast('Por favor, rellena todos los huecos.', 'error');
+                return;
+            }
+
+            let correctCount = 0;
+            let explanation = "Resultado:\n";
+            itemData.solutions.forEach((solution, i) => {
+                const userAnswerNormalized = userAnswers[i].toLowerCase();
+                const solutionNormalized = solution.toLowerCase();
+                const inputElement = document.getElementById(`fill-${index}-${i}`);
+
+                if (userAnswerNormalized === solutionNormalized) {
+                    correctCount++;
+                    explanation += `- Hueco ${i+1}: "${userAnswers[i]}" (Correcto).\n`;
+                    if(inputElement) inputElement.style.borderColor = 'green';
+                } else {
+                    explanation += `- Hueco ${i+1}: "${userAnswers[i]}" (Incorrecto, era "${solution}").\n`;
+                    if(inputElement) inputElement.style.borderColor = 'red';
+                }
+            });
+
+            let status;
+            if (correctCount === itemData.solutions.length) {
+                status = 'correcto';
+                explanation = "¡Todos los huecos son correctos!\n" + itemData.justification || explanation;
+            } else if (correctCount > 0) {
+                status = 'parcialmente_correcto';
+                explanation = "Algunos huecos son correctos.\n" + itemData.justification || explanation;
+            } else {
+                status = 'incorrecto';
+                explanation = "Ningún hueco es correcto.\n" + itemData.justification || explanation;
+            }
+            
+            const fullUserAnswerText = itemData.text_parts.reduce((acc, part, i) => {
+                 return acc + part + (userAnswers[i] ? `[${userAnswers[i]}]` : '[VACÍO]');
+            }, "");
+
+
+            displayEvaluationResult(index, { status, explanation }, itemData.question, `Tu respuesta: ${fullUserAnswerText}`, itemData.question_type);
+        }
+
+        function checkMultiTestAnswer(index) { // Multiple choices
+            const itemData = existingQuestions[index];
+            if (!itemData || !itemData.options || !Array.isArray(itemData.correct_options)) { 
+                showToast('Error: Datos de pregunta multichoice no encontrados.', 'error'); 
+                return; 
+            }
+
+            const selectedOptionInputs = document.querySelectorAll(`input[name^="options-${index}-"]:checked`);
+            
+            if (selectedOptionInputs.length === 0) {
+                showToast('Por favor, selecciona al menos una opción.', 'error');
+                return;
+            }
+
+            const userAnswers = Array.from(selectedOptionInputs).map(input => input.value); // ["A", "D"]
+            const correctOptions = itemData.correct_options; // ["A", "C"]
+
+            // Check correctness:
+            // 1. All user's answers must be in correctOptions
+            // 2. All correctOptions must be in user's answers (same length)
+            let isFullyCorrect = userAnswers.length === correctOptions.length && 
+                                 userAnswers.every(ans => correctOptions.includes(ans));
+
+            const optionLabels = document.querySelectorAll(`#questionsList .question-item[data-id="${index}"] .test-option`);
+            optionLabels.forEach(label => {
+                const input = label.querySelector('input[type="checkbox"]');
+                label.classList.remove('selected-option', 'correct-option', 'incorrect-option');
+
+                if (correctOptions.includes(input.value)) {
+                    label.classList.add('correct-option');
+                }
+                if (input.checked) {
+                    label.classList.add('selected-option');
+                    if (!correctOptions.includes(input.value)) { // User selected a wrong one
+                        label.classList.add('incorrect-option');
+                    }
+                }
+            });
+            
+            let status;
+            let explanationText = itemData.justification || "";
+            if (isFullyCorrect) {
+                status = 'correcto';
+                explanationText = "¡Todas las selecciones son correctas! " + explanationText;
+            } else {
+                // Check for partial correctness (some correct answers selected, but not all, or some incorrect selected)
+                const correctlySelected = userAnswers.filter(ans => correctOptions.includes(ans)).length;
+                const incorrectlySelected = userAnswers.filter(ans => !correctOptions.includes(ans)).length;
+
+                if (correctlySelected > 0 && incorrectlySelected === 0 && correctlySelected < correctOptions.length) {
+                    status = 'parcialmente_correcto';
+                    explanationText = "Has seleccionado algunas respuestas correctas, pero te faltaron otras. " + explanationText;
+                } else {
+                    status = 'incorrecto';
+                     explanationText = "Tu selección no es completamente correcta. " + explanationText;
+                }
+            }
+            
+            const userAnswerTextCombined = userAnswers.map(ua => `Opción ${ua}: ${itemData.options[ua]}`).join(', ');
+
+            displayEvaluationResult(index, { status, explanation: explanationText }, itemData.question, userAnswerTextCombined, itemData.question_type);
+        }
+        
+
+        function displayEvaluationResult(index, result, questionText, userAnswerText, questionType) {
+            const container = document.getElementById(`result-${index}`);
+            const isCorrect = result.status === 'correcto';
+            const isPartial = result.status === 'parcialmente_correcto';
+            const emoji = isCorrect ? '✅' : (isPartial ? '🟠' : '❌');
+            const explanationHtml = marked.parse(result.explanation || "No se proporcionó explicación.", { gfm: true, breaks: true });
+
+            container.innerHTML = `
+                <h4>${emoji} Resultado: ${result.status.replace(/_/g, ' ')}</h4>
+                <div class="explanation-section">
+                    <strong>📖 Justificación:</strong>
+                    <div class="markdown-content" id="explanation-${index}">${explanationHtml}</div>
+                </div>
+                <button class="btn btn-warning btn-sm" onclick="reExplainAnswer(${index}, '${questionText.replace(/'/g, "\\'")}', '${userAnswerText.replace(/'/g, "\\'")}', '${questionType.replace(/'/g, "\\'")}')">🗘 Explicar otra vez</button>
+                ${questionType === 'development' ? // Rebatir solo para desarrollo por ahora
+                `<button class="btn btn-secondary btn-sm" onclick="showRebuttalInput(${index}, '${questionText.replace(/'/g, "\\'")}', '${userAnswerText.replace(/'/g, "\\'")}', '${(result.explanation || "").replace(/'/g, "\\'")}')">🗣️ Rebatir</button>
+                 <div class="rebuttal-section hidden" id="rebuttal-${index}">
+                    <label for="rebuttal-text-${index}">Tu argumento:</label>
+                    <textarea id="rebuttal-text-${index}" placeholder="Explica por qué crees que tu respuesta es correcta o la evaluación necesita revisión..."></textarea>
+                    <button class="btn btn-primary btn-sm" onclick="submitRebuttal(${index})">Enviar Rebate</button>
+                </div>` : ''}
+            `;
+            container.className = `result-container ${isCorrect ? 'result-correct' : (isPartial ? 'result-warning' : 'result-incorrect')}`;
+            container.style.display = 'block';
+        }
+
+        async function reExplainAnswer(index, question, userAnswer, questionType) {
+            if (!validateApiConfig()) return;
+            const explanationDiv = document.getElementById(`explanation-${index}`);
+            if (!explanationDiv) { console.error("Div de explicación no encontrado para reExplain"); return; }
+            
+            const itemData = existingQuestions[index];
+            let originalExplanation = "No hay explicación previa.";
+
+            if (itemData) {
+                 if (itemData.question_type === 'test' || itemData.question_type === 'multi_choice_test') {
+                    originalExplanation = itemData.justification || "No se proporcionó justificación original.";
+                } else if (itemData.question_type === 'fill_in_the_blanks') {
+                    // For fill in the blanks, the original explanation is dynamic, so we try to get it from the DOM
+                    const currentExplanationElement = document.getElementById(`explanation-${index}`);
+                    if (currentExplanationElement) originalExplanation = currentExplanationElement.innerText;
+                } else { // development or other
+                     const currentExplanationElement = document.getElementById(`explanation-${index}`);
+                     if (currentExplanationElement) originalExplanation = currentExplanationElement.innerText;
+                }
+            }
+
+
+            const prompt = `La pregunta original (${questionType}) fue: "${question}"
+La respuesta del usuario fue: "${userAnswer}"
+La explicación anterior de la IA fue: "${originalExplanation}"
+El temario es:
+${currentContent.substring(0,1500)}
+
+Por favor, proporciona una NUEVA y DIFERENTE explicación para la respuesta del usuario a la pregunta.
+Adapta la nueva explicación al nivel de educación: ${config.educationLevel}.
+Debe estar en formato Markdown y ser lo más clara y sencilla posible.
+Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o formato JSON.`;
+
+            explanationDiv.innerHTML = '<span class="spinner" style="width:20px; height:20px; border-width:3px; display:inline-block; vertical-align:middle;"></span> Reformulando...';
+
+            try {
+                let newExplanationMarkdown;
+                const modelId = config.selectedModel;
+
+                 if (config.apiProvider === 'openrouter') {
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${config.openrouterApiKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] })
+                    });
+                    if (!response.ok) { const err = await response.text(); throw new Error(`OpenRouter Error ${response.status}: ${err}`); }
+                    const data = await response.json();
+                    newExplanationMarkdown = data.choices[0].message.content.trim();
+                } else { 
+                    const GOOGLE_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/${modelId}:generateContent?key=${config.googleApiKey}`;
+                    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+                    
+                    const response = await fetch(GOOGLE_API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                        throw new Error(`Google API Error ${response.status}: ${errorData.error?.message || errorData.message}`);
+                    }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        newExplanationMarkdown = data.candidates[0].content.parts[0].text.trim();
+                    } else { throw new Error("Respuesta de Google API inesperada al reformular."); }
+                }
+                const newExplanationHtml = marked.parse(newExplanationMarkdown, { gfm: true, breaks: true });
+                explanationDiv.innerHTML = newExplanationHtml;
+            } catch (error) {
+                explanationDiv.innerHTML = `❌ Error al reformular: ${error.message}`;
+                showToast(`Error al reformular: ${error.message}`, 'error');
+            }
+        }
+
+        function showRebuttalInput(index, question, userAnswer, currentExplanation) {
+            const rebuttalSection = document.getElementById(`rebuttal-${index}`);
+            if (rebuttalSection) {
+                rebuttalSection.classList.toggle('hidden');
+                rebuttalSection.dataset.question = question;
+                rebuttalSection.dataset.userAnswer = userAnswer;
+                rebuttalSection.dataset.currentExplanation = currentExplanation;
+            }
+        }
+
+        async function submitRebuttal(index) {
+            if (!validateApiConfig()) return;
+            const rebuttalSection = document.getElementById(`rebuttal-${index}`);
+            const rebuttalText = document.getElementById(`rebuttal-text-${index}`).value.trim();
+            const question = rebuttalSection.dataset.question;
+            const userAnswer = rebuttalSection.dataset.userAnswer;
+            const currentExplanation = rebuttalSection.dataset.currentExplanation;
+
+            if (!rebuttalText) {
+                showToast('Por favor, escribe tu argumento para el rebate.', 'error');
+                return;
+            }
+
+            const explanationDiv = document.getElementById(`explanation-${index}`);
+            explanationDiv.innerHTML = '<span class="spinner" style="width:20px; height:20px; border-width:3px; display:inline-block; vertical-align:middle;"></span> Procesando rebate...';
+
+            const prompt = `Contexto del temario:
+${currentContent.substring(0,1500)}
+
+Pregunta original: "${question}"
+Respuesta del usuario: "${userAnswer}"
+Explicación previa de la IA: "${currentExplanation}"
+Argumento del usuario (rebate): "${rebuttalText}"
+
+Por favor, considera el argumento del usuario. Re-evalúa la respuesta del usuario y proporciona una nueva explicación detallada en Markdown.
+Si cambias tu evaluación (ej. de incorrecto a correcto), indícalo claramente al inicio de tu explicación.
+Adapta tu lenguaje al nivel de educación: ${config.educationLevel}.
+Devuelve SÓLO la nueva explicación en Markdown.`;
+
+            try {
+                let newExplanationMarkdown;
+                const modelId = config.selectedModel;
+
+                if (config.apiProvider === 'openrouter') {
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${config.openrouterApiKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] })
+                    });
+                    if (!response.ok) { const err = await response.text(); throw new Error(`OpenRouter Error ${response.status}: ${err}`); }
+                    const data = await response.json();
+                    newExplanationMarkdown = data.choices[0].message.content.trim();
+                } else { 
+                    const GOOGLE_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/${modelId}:generateContent?key=${config.googleApiKey}`;
+                    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+                    const response = await fetch(GOOGLE_API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+                     if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                        throw new Error(`Google API Error ${response.status}: ${errorData.error?.message || errorData.message}`);
+                    }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        newExplanationMarkdown = data.candidates[0].content.parts[0].text.trim();
+                    } else { throw new Error("Respuesta de Google API inesperada al procesar rebate."); }
+                }
+                explanationDiv.innerHTML = marked.parse(newExplanationMarkdown, { gfm: true, breaks: true });
+                rebuttalSection.classList.add('hidden'); 
+                document.getElementById(`rebuttal-text-${index}`).value = ''; 
+            } catch (error) {
+                explanationDiv.innerHTML = `❌ Error procesando rebate: ${error.message}`;
+                showToast(`Error procesando rebate: ${error.message}`, 'error');
+            }
+        }
+
+
+        function showLoading(show, message = "Procesando...") {
+            const loadingDiv = document.getElementById('loading');
+            document.getElementById('loadingMessage').textContent = message;
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
+        function showToast(message, type = 'info') { 
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            void toast.offsetWidth; 
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 500); 
+            }, 4500); 
+        }
+
+
+        function formatFileSize(bytes) {
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
