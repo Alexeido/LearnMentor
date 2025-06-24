@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>📄 PDF a MD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src='https://unpkg.com/tesseract.js@5.0.5/dist/tesseract.min.js'></script>
+
+    <style>
+        /* ... (Estilos CSS sin cambios, como en la respuesta anterior) ... */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .file-input-area {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            background-color: #ecf0f1;
+            text-align: center;
+        }
+
+        .file-input-area label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            display: block;
+            margin: 0 auto 15px auto;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            width: calc(100% - 22px); /* padding + border */
+            box-sizing: border-box;
+        }
+        
+        .options-area {
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .options-area input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .options-area label {
+            font-weight: normal;
+            display: inline;
+            color: #555;
+        }
+
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .progress-area {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #ced4da;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: #28a745;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: width 0.2s ease-out;
+        }
+
+        .output-area {
+            margin-top: 30px;
+        }
+
+        .output-area h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 15px;
+            border: 1px solid #bdc3c7;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+            resize: vertical;
+            background-color: #fdfdfe;
+        }
+
+        .download-options {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .download-options label {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+
+        .download-button {
+            background-color: #1abc9c;
+        }
+        .download-button:hover {
+            background-color: #16a085;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .processing-notice {
+            text-align: center;
+            font-size: 0.85em; 
+            color: #7f8c8d; 
+            margin-top: 15px; 
+            padding: 10px; 
+            background-color: #f8f9fa; 
+            border-radius: 4px; 
+            border: 1px solid #dee2e6; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 PDF a Markdown</h1>
+
+        <div class="file-input-area">
+            <label for="pdfFile">Sube tu archivo PDF:</label>
+            <input type="file" id="pdfFile" accept=".pdf" />
+             <div class="options-area">
+                <input type="checkbox" id="forceOcrCheckbox">
+                <label for="forceOcrCheckbox">Forzar OCR (incluso si se detecta texto en el PDF)</label>
+            </div>
+            <button id="processBtn">🔎 Procesar PDF y Extraer Texto</button>
+        </div>
+
+        <div id="progressArea" class="progress-area hidden">
+            <div id="status">Iniciando...</div>
+            <div id="detailedStatus"></div>
+            <div class="progress-bar-container">
+                <div id="progressBar" class="progress-bar">0%</div>
+            </div>
+            <p id="processingNotice" class="processing-notice hidden">
+                ℹ️ El procesamiento está en curso. Para mayor velocidad, por favor mantén esta pestaña activa y visible. El progreso puede ralentizarse si cambias de pestaña o minimizas el navegador.
+            </p>
+        </div>
+
+        <div id="outputArea" class="output-area hidden">
+            <h3>📝 Contenido Extraído (Página por Página):</h3>
+            <textarea id="markdownOutput" readonly placeholder="El contenido extraído aparecerá aquí..."></textarea>
+            
+            <div class="download-options">
+                <label for="fileNameInput">Nombre del archivo (sin .md):</label>
+                <input type="text" id="fileNameInput" placeholder="Ej: mi_temario_convertido">
+                <button id="downloadBtn" class="download-button">💾 Descargar como .md</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const pdfFileInput = document.getElementById('pdfFile');
+        const processBtn = document.getElementById('processBtn');
+        const forceOcrCheckbox = document.getElementById('forceOcrCheckbox');
+        const progressArea = document.getElementById('progressArea');
+        const statusDiv = document.getElementById('status');
+        const detailedStatusDiv = document.getElementById('detailedStatus');
+        const progressBar = document.getElementById('progressBar');
+        const outputArea = document.getElementById('outputArea');
+        const markdownOutput = document.getElementById('markdownOutput');
+        const fileNameInput = document.getElementById('fileNameInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const processingNotice = document.getElementById('processingNotice');
+
+        let tesseractWorker = null;
+        let totalPages = 0;
+        let processedPagesForOcr = 0; 
+        
+        const DOWNLOAD_FILE_HEADER = "ESTE ES UN TEMARIO ESCANEADO EN FOTOS Y PASADO A TEXTO EN OCR PARA GENERAR PREGUNTAS POR ESO LA LEGIBILIDAD NO ES QUE SEA LA MEJOR\n\n---\n\n"; 
+        // Ya no necesitamos DIRECT_TEXT_PREFIX, OCR_TEXT_PREFIX, SECTION_SEPARATOR globales
+        const MIN_CHARS_PER_PAGE_FOR_NO_OCR = 50; 
+        const ORIGINAL_TITLE = document.title; 
+
+        async function initializeTesseractIfNeeded() {
+            if (!tesseractWorker || tesseractWorker.recognize === undefined) {
+                updateStatus("Inicializando motor OCR (Tesseract.js)...");
+                detailedStatusDiv.textContent = "Esto puede tardar un momento la primera vez.";
+                try {
+                     tesseractWorker = await Tesseract.createWorker('spa', 1, {
+                        logger: m => {
+                            if (m.status === 'recognizing text' || m.status === 'loading language model') {
+                                const pageProgress = m.progress * 100;
+                                detailedStatusDiv.textContent = `OCR Página ${processedPagesForOcr + 1}/${totalPages}: ${m.status} (${pageProgress.toFixed(0)}%)`;
+                                document.title = `(${pageProgress.toFixed(0)}%) OCR P.${processedPagesForOcr + 1} - ${ORIGINAL_TITLE}`;
+                            } else if (m.status) {
+                                detailedStatusDiv.textContent = `OCR: ${m.status}`;
+                            }
+                        },
+                    });
+                    updateStatus("Motor OCR listo.");
+                    detailedStatusDiv.textContent = "";
+                } catch (error) {
+                    console.error("Error inicializando Tesseract:", error);
+                    updateStatus("Error al inicializar el motor OCR. Intenta recargar la página.", true);
+                    throw error; 
+                }
+            } else {
+                 updateStatus("Motor OCR ya inicializado.");
+            }
+        }
+
+        processBtn.addEventListener('click', async () => {
+            const file = pdfFileInput.files[0];
+            if (!file) {
+                alert('Por favor, selecciona un archivo PDF.');
+                return;
+            }
+
+            processBtn.disabled = true;
+            forceOcrCheckbox.disabled = true;
+            outputArea.classList.add('hidden');
+            markdownOutput.value = '';
+            fileNameInput.value = file.name.replace(/\.[^/.]+$/, "") ;
+            progressArea.classList.remove('hidden');
+            processingNotice.classList.remove('hidden'); 
+            updateProgressBar(0, '0%');
+            document.title = `(0%) Procesando... - ${ORIGINAL_TITLE}`;
+            
+            let pageContents = []; // Array para almacenar contenido de cada página
+            let totalDirectTextChars = 0; // Para calcular el promedio de caracteres del texto directo
+            let performOcr = false;
+
+            updateStatus('Cargando archivo PDF...');
+            const fileReader = new FileReader();
+
+            fileReader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                try {
+                    const pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
+                    totalPages = pdf.numPages;
+                    // Inicializar pageContents
+                    for (let i = 0; i < totalPages; i++) {
+                        pageContents.push({
+                            pageNumber: i + 1,
+                            directText: "",
+                            ocrText: ""
+                        });
+                    }
+
+                    updateStatus(`PDF cargado. Total páginas: ${totalPages}. Extrayendo texto directo...`);
+                    
+                    // 1. Extraer texto directamente de cada página
+                    for (let i = 0; i < totalPages; i++) {
+                        const page = await pdf.getPage(i + 1);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ').trim();
+                        pageContents[i].directText = pageText;
+                        totalDirectTextChars += pageText.length;
+                        
+                        const overallProgress = ((i + 1) / totalPages) * 25; 
+                        updateProgressBar(overallProgress, `${overallProgress.toFixed(0)}%`);
+                        detailedStatusDiv.textContent = `Extrayendo texto de página ${i + 1}/${totalPages}...`;
+                        document.title = `(${overallProgress.toFixed(0)}%) Ext. Texto P.${i + 1} - ${ORIGINAL_TITLE}`;
+                    }
+                    updateStatus("Texto directo extraído de todas las páginas.");
+
+                    // 2. Decidir si hacer OCR (globalmente)
+                    const averageCharsPerPage = totalPages > 0 ? totalDirectTextChars / totalPages : 0;
+                    if (forceOcrCheckbox.checked) {
+                        performOcr = true;
+                        updateStatus("Forzando OCR como se solicitó.");
+                    } else if (averageCharsPerPage < MIN_CHARS_PER_PAGE_FOR_NO_OCR && totalPages > 0) {
+                        performOcr = true;
+                        updateStatus(`Texto directo parece insuficiente (${averageCharsPerPage.toFixed(0)} chars/pág). Iniciando OCR.`);
+                    } else if (totalPages > 0) {
+                        updateStatus(`Texto directo extraído (${averageCharsPerPage.toFixed(0)} chars/pág). OCR omitido.`);
+                        detailedStatusDiv.textContent = "Si el resultado no es bueno, prueba marcando 'Forzar OCR'.";
+                        updateProgressBar(100, '100%'); 
+                        document.title = `¡Completado! - ${ORIGINAL_TITLE}`;
+                    } else if (totalPages === 0) {
+                        updateStatus("El PDF no tiene páginas.", true);
+                        performOcr = false; // No hay nada que OCRear
+                        updateProgressBar(100, '100%');
+                        document.title = `Error - ${ORIGINAL_TITLE}`;
+                    }
+
+
+                    // 3. Realizar OCR si es necesario, página por página
+                    if (performOcr && totalPages > 0) {
+                        await initializeTesseractIfNeeded(); 
+                        processedPagesForOcr = 0; // Usado por el logger de Tesseract
+                        updateStatus("Iniciando proceso de OCR...");
+                        
+                        for (let i = 0; i < totalPages; i++) {
+                            processedPagesForOcr = i; // Actualizar para el logger de Tesseract
+                            const baseProgress = (forceOcrCheckbox.checked && totalDirectTextChars > 0) ? 25 : 0; 
+                            updateStatus(`Procesando OCR en página ${i + 1} de ${totalPages}...`);
+                            
+                            const page = await pdf.getPage(i + 1);
+                            const scale = 2.0; 
+                            const viewport = page.getViewport({ scale: scale });
+                            
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            
+                            detailedStatusDiv.textContent = `Preparando OCR para página ${i + 1}...`;
+                            const { data: { text } } = await tesseractWorker.recognize(canvas.toDataURL('image/png'));
+                            pageContents[i].ocrText = text.trim();
+                            canvas.remove();
+
+                            const ocrProgressPortion = (forceOcrCheckbox.checked && totalDirectTextChars > 0) ? 75 : 100;
+                            const overallProgress = baseProgress + (((i + 1) / totalPages) * ocrProgressPortion);
+                            updateProgressBar(overallProgress, `${overallProgress.toFixed(0)}%`);
+                            // El título se actualiza en el logger de Tesseract para OCR
+                        }
+                        updateStatus("OCR completado para todas las páginas necesarias.");
+                        if (totalPages > 0) document.title = `¡Completado! - ${ORIGINAL_TITLE}`;
+                    }
+
+                    // 4. Ensamblar el resultado final
+                    let finalOutputMarkdown = "";
+                    if (totalPages > 0) {
+                        for (const content of pageContents) {
+                            finalOutputMarkdown += `# PAGINA ${content.pageNumber}\n\n`;
+                            
+                            finalOutputMarkdown += `## TEXTO EXTRAIDO DEL PDF\n`;
+                            if (content.directText) {
+                                finalOutputMarkdown += `${content.directText}\n\n`;
+                            } else {
+                                finalOutputMarkdown += `_No se extrajo texto directo de esta página._\n\n`;
+                            }
+
+                            if (performOcr) { // Solo mostrar sección OCR si se intentó hacer OCR
+                                finalOutputMarkdown += `## TEXTO EXTRAIDO DEL OCR ***Podria ser el mismo que el del PDF***\n`;
+                                if (content.ocrText) {
+                                    finalOutputMarkdown += `${content.ocrText}\n\n`;
+                                } else {
+                                    finalOutputMarkdown += `_No se obtuvo texto OCR de esta página (o el OCR no se ejecutó para esta página)._\n\n`;
+                                }
+                            } else if (forceOcrCheckbox.checked && !performOcr && averageCharsPerPage >= MIN_CHARS_PER_PAGE_FOR_NO_OCR) {
+                                // Caso especial: se forzó OCR pero no se ejecutó porque ya había texto directo suficiente.
+                                // Podríamos añadir una nota aquí o simplemente no mostrar la sección OCR.
+                                // Por simplicidad, no la mostramos si performOcr es false.
+                            }
+                        }
+                    } else {
+                         finalOutputMarkdown = "El PDF no contiene páginas o no se pudo procesar.";
+                    }
+                    
+                    
+                    if (!finalOutputMarkdown.trim() && totalPages > 0) {
+                        finalOutputMarkdown = "No se pudo extraer ningún contenido del PDF.";
+                         updateStatus("No se pudo extraer texto.", true);
+                         document.title = `Error - ${ORIGINAL_TITLE}`;
+                    } else if (totalPages > 0) {
+                        updateStatus('¡Proceso completado!', false, true);
+                        document.title = `¡Listo! - ${ORIGINAL_TITLE}`;
+                    } else if (totalPages === 0 && !finalOutputMarkdown.includes("El PDF no contiene páginas")) {
+                         // Este caso no debería ocurrir si la lógica de totalPages === 0 es correcta arriba
+                         finalOutputMarkdown = "El PDF no contiene páginas.";
+                         updateStatus("El PDF no tiene páginas.", true);
+                         document.title = `Error - ${ORIGINAL_TITLE}`;
+                    }
+                    
+                    markdownOutput.value = finalOutputMarkdown.trim();
+                    outputArea.classList.remove('hidden');
+                    detailedStatusDiv.textContent = "";
+
+                } catch (error) {
+                    console.error('Error procesando PDF:', error);
+                    updateStatus(`Error: ${error.message}`, true);
+                    document.title = `Error - ${ORIGINAL_TITLE}`;
+                } finally {
+                    processBtn.disabled = false;
+                    forceOcrCheckbox.disabled = false;
+                    processingNotice.classList.add('hidden'); 
+                }
+            };
+
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const textFromTextarea = markdownOutput.value;
+            if (!textFromTextarea.trim() || textFromTextarea.startsWith("El PDF no contiene páginas") || textFromTextarea === "No se pudo extraer ningún contenido del PDF.") {
+                alert('No hay contenido válido para descargar.');
+                return;
+            }
+
+            let filename = fileNameInput.value.trim();
+            if (!filename) {
+                filename = "documento_paginado";
+            }
+            filename += ".md";
+
+            const finalContentForFile = DOWNLOAD_FILE_HEADER + textFromTextarea;
+
+            const blob = new Blob([finalContentForFile], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement("a");
+
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Tu navegador no soporta la descarga directa. Por favor, copia el texto manualmente.');
+            }
+        });
+
+        function updateStatus(message, isError = false, isSuccess = false) {
+            statusDiv.textContent = message;
+            statusDiv.style.color = isError ? 'red' : (isSuccess ? 'green' : '#333');
+            if (!isError && !isSuccess && message !== "Motor OCR listo." && message !== "Motor OCR ya inicializado." && !message.startsWith("Texto directo extraído") && !message.startsWith("OCR completado") && !message.startsWith("¡Proceso completado!")) {
+                 if (!message.startsWith("Procesando OCR en página") && !message.startsWith("PDF cargado") && !message.startsWith("Texto directo parece insuficiente") && !message.startsWith("Forzando OCR") && !message.startsWith("Iniciando proceso de OCR")){
+                    detailedStatusDiv.textContent = "Por favor, espera...";
+                 }
+            } else if (isError || isSuccess || message === "Motor OCR listo." || message === "Motor OCR ya inicializado." || message.startsWith("Texto directo extraído")|| message.startsWith("OCR completado") || message.startsWith("¡Proceso completado!")){
+                 if (! (isSuccess && detailedStatusDiv.textContent.includes("Si el resultado no es bueno")) ) { 
+                    detailedStatusDiv.textContent = "";
+                 }
+            }
+        }
+        
+        function updateProgressBar(value, text) {
+            const clampedValue = Math.min(100, Math.max(0, value));
+            progressBar.style.width = `${clampedValue}%`;
+            progressBar.textContent = text || `${clampedValue.toFixed(0)}%`;
+        }
+
+        window.addEventListener('beforeunload', async () => {
+            if (tesseractWorker) {
+                console.log("Terminando Tesseract worker...");
+                await tesseractWorker.terminate();
+                tesseractWorker = null;
+                console.log("Tesseract worker terminado.");
+            }
+            document.title = ORIGINAL_TITLE; 
+        });
+
+    </script>
+</body>
+</html>
