@@ -338,6 +338,7 @@
             padding: 15px;
             border-radius: 10px;
             display: none; 
+            transition: background-color 0.5s ease;
         }
         .result-container .markdown-content h1,
         .result-container .markdown-content h2,
@@ -1469,11 +1470,25 @@ Respuesta del usuario:
 ${answer}
 **Formato Obligatorio (solo el JSON object):**
 {
-    "status": "correcto" | "incorrecto" | "parcialmente_correcto",
-    "explanation": "Explicación en Markdown de por qué (lenguaje apropiado para ${config.educationLevel})."
+    "score": <un número entero del 0 al 100 que representa la calidad de la respuesta>,
+    "explanation": "Explicación en Markdown de por qué se ha asignado esa puntuación (lenguaje apropiado para ${config.educationLevel})."
 }
 Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.`;
+
                 const result = await callLLMApi(prompt, "evaluation_object");
+
+                // Validate the new format
+                if (typeof result.score !== 'number' || result.score < 0 || result.score > 100) {
+                    console.error("La IA no devolvió un 'score' válido.", result);
+                    const explanation = result.explanation || "No se recibió explicación.";
+                    const fallbackResult = { 
+                        status: 'incorrecto', 
+                        explanation: `**Error de formato de la IA:** No se pudo obtener una puntuación válida.\n\n**Respuesta original de la IA:**\n${explanation}`
+                    };
+                    displayEvaluationResult(index, fallbackResult, itemData.question, answer, itemData.question_type);
+                    return; // Exit after displaying the formatted error
+                }
+
                 displayEvaluationResult(index, result, itemData.question, answer, itemData.question_type);
             } catch (error) {
                 resultContainer.innerHTML = `<p>❌ Error al evaluar: ${error.message}</p>`;
@@ -1578,31 +1593,81 @@ Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.`
             displayEvaluationResult(index, { status, explanation: explanationText }, itemData.question, userAnswerTextCombined, itemData.question_type);
         }
         
+
         function displayEvaluationResult(index, result, questionText, userAnswerText, questionType) {
             const container = document.getElementById(`result-${index}`);
-            const isCorrect = result.status === 'correcto';
-            const isPartial = result.status === 'parcialmente_correcto';
-            const emoji = isCorrect ? '✅' : (isPartial ? '🟠' : '❌');
             const explanationHtml = marked.parse(result.explanation || "No se proporcionó explicación.", { gfm: true, breaks: true });
 
+            let headerHtml = '';
+            let containerClass = 'result-container';
+            let containerStyle = { backgroundColor: '', border: '', color: '' };
+
+            if (typeof result.score === 'number' && questionType === 'development') {
+                const score = Math.round(result.score);
+                headerHtml = `<h4>📊 Puntuación: ${score}/100</h4>`;
+                const scoreColor = getScoreColor(score);
+                const borderColor = score >= 90 ? '#c3e6cb' : (score >= 50 ? '#ffeeba' : '#f5c6cb');
+                containerStyle = { backgroundColor: scoreColor, border: `2px solid ${borderColor}`, color: '#333' };
+            } else {
+                const isCorrect = result.status === 'correcto';
+                const isPartial = result.status === 'parcialmente_correcto';
+                const emoji = isCorrect ? '✅' : (isPartial ? '🟠' : '❌');
+                headerHtml = `<h4>${emoji} Resultado: ${result.status.replace(/_/g, ' ')}</h4>`;
+                containerClass = `result-container ${isCorrect ? 'result-correct' : (isPartial ? 'result-warning' : 'result-incorrect')}`;
+            }
+
+            // --- PASO 1: Generar HTML sin onclick, pero con IDs ---
+            const rebuttalSectionHtml = `
+                <div class="rebuttal-section hidden" id="rebuttal-${index}">
+                    <label for="rebuttal-text-${index}">Tu argumento:</label>
+                    <textarea id="rebuttal-text-${index}" placeholder="Explica por qué crees que tu respuesta es correcta o la evaluación necesita revisión..."></textarea>
+                    <button id="submit-rebuttal-btn-${index}" class="btn btn-primary btn-sm">Enviar respuesta</button>
+                </div>
+            `;
+            
             container.innerHTML = `
-                <h4>${emoji} Resultado: ${result.status.replace(/_/g, ' ')}</h4>
+                ${headerHtml}
                 <div class="explanation-section">
                     <strong>📖 Justificación:</strong>
                     <div class="markdown-content" id="explanation-${index}">${explanationHtml}</div>
                 </div>
-                <button class="btn btn-warning btn-sm" onclick="reExplainAnswer(${index}, '${questionText.replace(/'/g, "\\'")}', '${userAnswerText.replace(/'/g, "\\'")}', '${questionType.replace(/'/g, "\\'")}')">🔁 Explicar otra vez</button>
-                ${questionType === 'development' ? 
-                `<button class="btn btn-secondary btn-sm" onclick="showRebuttalInput(${index}, '${questionText.replace(/'/g, "\\'")}', '${userAnswerText.replace(/'/g, "\\'")}', '${(result.explanation || "").replace(/'/g, "\\'")}')">🗣️ Rebatir</button>
-                 <div class="rebuttal-section hidden" id="rebuttal-${index}">
-                    <label for="rebuttal-text-${index}">Tu argumento:</label>
-                    <textarea id="rebuttal-text-${index}" placeholder="Explica por qué crees que tu respuesta es correcta o la evaluación necesita revisión..."></textarea>
-                    <button class="btn btn-primary btn-sm" onclick="submitRebuttal(${index})">Enviar Rebate</button>
-                </div>` : ''}
+                <button id="re-explain-btn-${index}" class="btn btn-warning btn-sm">🔁 Explicar otra vez</button>
+                ${questionType === 'development' ? `<button id="rebut-btn-${index}" class="btn btn-secondary btn-sm">🗣️ Rebatir</button>` : ''}
+                ${questionType === 'development' ? rebuttalSectionHtml : ''}
             `;
-            container.className = `result-container ${isCorrect ? 'result-correct' : (isPartial ? 'result-warning' : 'result-incorrect')}`;
+
+            // Aplicar estilos
+            container.className = containerClass;
+            Object.assign(container.style, containerStyle);
             container.style.display = 'block';
+
+            // --- PASO 2: Añadir listeners de forma programática ---
+            const reExplainBtn = document.getElementById(`re-explain-btn-${index}`);
+            if (reExplainBtn) {
+                reExplainBtn.addEventListener('click', () => {
+                    reExplainAnswer(index, questionText, userAnswerText, questionType);
+                });
+            }
+
+            if (questionType === 'development') {
+                const rebutBtn = document.getElementById(`rebut-btn-${index}`);
+                if (rebutBtn) {
+                    rebutBtn.addEventListener('click', () => {
+                        // Pasamos solo el index, el resto de datos se los pasamos a la función de envío
+                        showRebuttalInput(index); 
+                    });
+                }
+                
+                const submitRebuttalBtn = document.getElementById(`submit-rebuttal-btn-${index}`);
+                if (submitRebuttalBtn) {
+                    submitRebuttalBtn.addEventListener('click', () => {
+                        // Ahora la función de envío necesita los datos
+                        submitRebuttal(index, questionText, userAnswerText, result.explanation || "");
+                    });
+                }
+            }
         }
+
 
         async function reExplainAnswer(index, question, userAnswer, questionType) {
             if (!validateApiConfig()) return;
@@ -1668,18 +1733,16 @@ Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o format
                 showToast(`Error al reformular: ${error.message}`, 'error');
             }
         }
-
-        function showRebuttalInput(index, question, userAnswer, currentExplanation) {
+        
+        function showRebuttalInput(index) {
             const rebuttalSection = document.getElementById(`rebuttal-${index}`);
             if (rebuttalSection) {
+                // classList.toggle es simple y debería funcionar ahora que el listener es robusto.
                 rebuttalSection.classList.toggle('hidden');
-                rebuttalSection.dataset.question = question;
-                rebuttalSection.dataset.userAnswer = userAnswer;
-                rebuttalSection.dataset.currentExplanation = currentExplanation;
             }
         }
 
-        async function submitRebuttal(index) {
+        async function submitRebuttal(index, question, userAnswer, currentExplanation) {
             if (!validateApiConfig()) return;
             const rebuttalSection = document.getElementById(`rebuttal-${index}`);
             const rebuttalText = document.getElementById(`rebuttal-text-${index}`).value.trim();
@@ -1690,9 +1753,9 @@ Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o format
 
             const prompt = `Contexto del temario:
 ${currentContent.substring(0,1500)}
-Pregunta original: "${rebuttalSection.dataset.question}"
-Respuesta del usuario: "${rebuttalSection.dataset.userAnswer}"
-Explicación previa de la IA: "${rebuttalSection.dataset.currentExplanation}"
+Pregunta original: "${question}"
+Respuesta del usuario: "${userAnswer}"
+Explicación previa de la IA: "${currentExplanation}"
 Argumento del usuario (rebate): "${rebuttalText}"
 
 Re-evalúa la respuesta del usuario y proporciona una nueva explicación detallada en Markdown.
@@ -1700,19 +1763,17 @@ Si cambias tu evaluación (ej. de incorrecto a correcto), indícalo claramente.
 Adapta tu lenguaje al nivel ${config.educationLevel}. Devuelve SÓLO la nueva explicación en Markdown.`;
 
             try {
-                // Similar to reExplainAnswer, expecting plain Markdown text
+                // El resto de la lógica de la API es la misma y está bien.
                 let newExplanationMarkdown;
                 const modelId = config.selectedModel;
                 if (config.apiProvider === 'openrouter') {
-                    // ... OpenRouter call (same as reExplainAnswer)
-                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', { /* ... */ body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] }) });
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${config.openrouterApiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] }) });
                     if (!response.ok) { const err = await response.text(); throw new Error(`OpenRouter Error ${response.status}: ${err.substring(0,100)}`); }
                     const data = await response.json(); newExplanationMarkdown = data.choices[0].message.content.trim();
                 } else {
-                    // ... Google Gemini call (same as reExplainAnswer)
                     const GOOGLE_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/${modelId}:generateContent?key=${config.googleApiKey}`;
                     const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
-                    const response = await fetch(GOOGLE_API_ENDPOINT, { /* ... */ body: JSON.stringify(requestBody) });
+                    const response = await fetch(GOOGLE_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
                     if (!response.ok) { const errorData = await response.json().catch(() => ({ message: response.statusText })); throw new Error(`Google API Error ${response.status}: ${errorData.error?.message || errorData.message}`);}
                     const data = await response.json(); if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) { newExplanationMarkdown = data.candidates[0].content.parts[0].text.trim(); } else { throw new Error("Respuesta de Google API inesperada al procesar rebate."); }
                 }
@@ -1724,6 +1785,7 @@ Adapta tu lenguaje al nivel ${config.educationLevel}. Devuelve SÓLO la nueva ex
                 showToast(`Error procesando rebate: ${error.message}`, 'error');
             }
         }
+
 
         // --- UI Utilities ---
         function showLoading(show, message = "Procesando...") {
@@ -1744,6 +1806,39 @@ Adapta tu lenguaje al nivel ${config.educationLevel}. Devuelve SÓLO la nueva ex
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 500); 
             }, 4500); 
+        }
+
+        function getScoreColor(score) {
+            score = Math.max(0, Math.min(100, score)); // Clamp score
+
+            const red = { r: 248, g: 215, b: 218 };     // #f8d7da
+            const orange = { r: 255, g: 243, b: 205 }; // #fff3cd
+            const green = { r: 212, g: 237, b: 218 };   // #d4edda
+
+            let r, g, b;
+
+            if (score <= 10) {
+                return `rgb(${red.r}, ${red.g}, ${red.b})`;
+            }
+            if (score >= 90) {
+                return `rgb(${green.r}, ${green.g}, ${green.b})`;
+            }
+
+            if (score < 50) {
+                // Interpolate between red (at score 10) and orange (at score 50)
+                const ratio = (score - 10) / (50 - 10);
+                r = Math.round(red.r + (orange.r - red.r) * ratio);
+                g = Math.round(red.g + (orange.g - red.g) * ratio);
+                b = Math.round(red.b + (orange.b - red.b) * ratio);
+            } else { // score is >= 50 and < 90
+                // Interpolate between orange (at score 50) and green (at score 90)
+                const ratio = (score - 50) / (90 - 50);
+                r = Math.round(orange.r + (green.r - orange.r) * ratio);
+                g = Math.round(orange.g + (green.g - orange.g) * ratio);
+                b = Math.round(orange.b + (green.b - orange.b) * ratio);
+            }
+
+            return `rgb(${r}, ${g}, ${b})`;
         }
 
         function formatFileSize(bytes) {
