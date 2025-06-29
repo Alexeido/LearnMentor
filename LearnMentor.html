@@ -1462,8 +1462,6 @@ Genera el array JSON y nada más.`;
             try {
                 const prompt = `Evalúa la siguiente respuesta a la pregunta de desarrollo. Sé estricto pero justo.
 Adapta la explicación al nivel de educación: ${config.educationLevel}. La explicación debe estar en formato Markdown.
-Temario relevante (para contexto, no para copiar):
-${currentContent.substring(0, 1500)} 
 Pregunta:
 ${itemData.question}
 Respuesta del usuario:
@@ -1473,7 +1471,11 @@ ${answer}
     "score": <un número entero del 0 al 100 que representa la calidad de la respuesta>,
     "explanation": "Explicación en Markdown de por qué se ha asignado esa puntuación (lenguaje apropiado para ${config.educationLevel})."
 }
-Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.`;
+Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.
+
+Temario relevante para la evaluación:
+${currentContent} 
+`;
 
                 const result = await callLLMApi(prompt, "evaluation_object");
 
@@ -1684,13 +1686,15 @@ Asegúrate de que la respuesta contenga únicamente el objeto JSON y nada más.`
             const prompt = `La pregunta original (${questionType}) fue: "${question}"
 La respuesta del usuario fue: "${userAnswer}"
 La explicación anterior de la IA fue: "${originalExplanation}"
-El temario es:
-${currentContent.substring(0,1500)}
 
 Por favor, proporciona una NUEVA y DIFERENTE explicación para la respuesta del usuario a la pregunta.
 Adapta la nueva explicación al nivel de educación: ${config.educationLevel}.
 Debe estar en formato Markdown y ser lo más clara y sencilla posible.
-Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o formato JSON.`;
+Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o formato JSON.
+
+El temario es:
+${currentContent}
+`;
 
             explanationDiv.innerHTML = '<span class="spinner" style="width:20px; height:20px; border-width:3px; display:inline-block; vertical-align:middle;"></span> Reformulando...';
 
@@ -1751,8 +1755,7 @@ Devuelve SÓLO la explicación en Markdown, sin ningún texto adicional o format
             const explanationDiv = document.getElementById(`explanation-${index}`);
             explanationDiv.innerHTML = '<span class="spinner" style="width:20px; height:20px; border-width:3px; display:inline-block; vertical-align:middle;"></span> Procesando rebate...';
 
-            const prompt = `Contexto del temario:
-${currentContent.substring(0,1500)}
+            const prompt = `
 Pregunta original: "${question}"
 Respuesta del usuario: "${userAnswer}"
 Explicación previa de la IA: "${currentExplanation}"
@@ -1760,7 +1763,10 @@ Argumento del usuario (rebate): "${rebuttalText}"
 
 Re-evalúa la respuesta del usuario y proporciona una nueva explicación detallada en Markdown.
 Si cambias tu evaluación (ej. de incorrecto a correcto), indícalo claramente.
-Adapta tu lenguaje al nivel ${config.educationLevel}. Devuelve SÓLO la nueva explicación en Markdown.`;
+Adapta tu lenguaje al nivel ${config.educationLevel}. Devuelve SÓLO la nueva explicación en Markdown y di la nota nueva en la explicación si te la pide.
+Contexto del temario:
+${currentContent}
+`;
 
             try {
                 // El resto de la lógica de la API es la misma y está bien.
